@@ -2,3 +2,4 @@ numba
 numpy
 tqdm
 matplotlib
+scipy
