@@ -342,14 +342,14 @@ def main(datafile, plot_live, resolution):
                             ylim=[-30,30],
                             prior=0.5)
 
-    reader = csv.reader(open("data/ogm_ground_truth.csv"), delimiter=",")
+    reader = csv.reader(open("../data/real_world_map.csv"), delimiter=",")
     x = list(reader)
     omap.grid = np.array(x).astype("float")
 
     omap.grid[omap.grid == 1] = 100
     omap.grid[omap.grid == 0] = -100
 
-    pickle.dump(omap, open('data/map.p', 'wb'))
+    pickle.dump(omap, open('real_world_map.p', 'wb'))
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Occupancy Grid Map")

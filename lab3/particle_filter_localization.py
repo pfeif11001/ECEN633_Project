@@ -429,7 +429,8 @@ if __name__ == "__main__":
     parser.add_argument("-g", "--makeGif", action="store_true", help="Whether to save a gif of all the frames")
     parser.add_argument("-p", "--plot_live", action="store_true", help="Whether we should plot as we go")
     parser.add_argument("-d", "--datafile", type=str, default="data/localization-dataset.npz", help="Location of localization data. Defaults to data/localization-data.npz")
-    parser.add_argument("-m", "--mapfile", type=str, default="data/map.p", help="Location of map data. Defaults to data/map.p")
+    parser.add_argument("-m", "--mapfile", type=str, default="data/
+                        ", help="Location of map data. Defaults to data/map.p")
     parser.add_argument("-n", "--num", type=int, default=100, help="Number of particles to use")
     args = vars(parser.parse_args())
 
