@@ -208,5 +208,6 @@ def main():
     #og.plotOccupancyGrid([-12, 20], [-23.5, 7])
     #og.plotOccupancyGrid(xRange =[-11.9, 20], yRange =[-23.5, 6.    og.plotOccupancyGrid()
 
+    plt.show()
 if __name__ == '__main__':
     main()

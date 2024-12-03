@@ -2,7 +2,6 @@ import numpy as np
 import imageio
 import pandas as pd
 
-
 loaded_arr = np.load('map.npy')
 
 # Threshold the image
@@ -16,15 +15,15 @@ for i in range(loaded_arr.shape[0]):
 # Convert the array to integers
 loaded_arr = loaded_arr.astype(int)
 
-
 df = pd.DataFrame(loaded_arr)
 
 # Save the map as a csv file
-# np.savetxt('map.csv', loaded_arr, delimiter=',')
 df.to_csv('real_world_map.csv', index=False, header=False)
 
 # Convert the array to uint8
 loaded_arr_uint8 = (loaded_arr * 255 / np.max(loaded_arr)).astype(np.uint8)
+# Print the shape of the array
+print(loaded_arr_uint8.shape)
 
 # Save numpy array as a png image
 imageio.imwrite('map.png', loaded_arr_uint8)

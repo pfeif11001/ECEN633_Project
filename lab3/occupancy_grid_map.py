@@ -148,12 +148,27 @@ class OccupancyGrid():
 
     def plot_grid(self, ax):
         """Plot the grid to the screen."""
+        assert isinstance(self.grid, np.ndarray), "self.grid should be a NumPy array"
+        assert isinstance(self.xcoords, np.ndarray), "self.xcoords should be a NumPy array"
+        assert isinstance(self.ycoords, np.ndarray), "self.ycoords should be a NumPy array"
+        assert hasattr(ax, 'pcolormesh'), "ax should be a Matplotlib Axes object"
+        assert self.plot is None or isinstance(self.plot, type(ax.pcolormesh([], []))), "self.plot should be None or a Matplotlib QuadMesh object"
+
         self.grid_plt = np.vectorize(self.p_from_l)(self.grid)
 
         if self.plot is None:
             X, Y = np.meshgrid(self.xcoords, self.ycoords)
+            
+            # Print the dimensions of X, Y, and self.grid
+            print(X.shape)
+            print(Y.shape)
+            print(self.grid_plt.shape)
+            
+            # Assert that dimensions of X, Y, and self.grid are the same
+            assert X.shape == self.grid_plt.shape, "X and grid dimensions do not match"
+            assert Y.shape == self.grid_plt.shape, "Y and grid dimensions do not match"
+            
             self.plot = ax.pcolormesh(X, Y, self.grid_plt, shading='auto', cmap='gray_r', vmin=0, vmax=1)
-
         else:
             self.plot.set_array(self.grid_plt.ravel())
 
@@ -337,12 +352,22 @@ class OccupancyGridMap():
 
 def main(datafile, plot_live, resolution):
     # Make map
-    omap = OccupancyGrid(resolution=resolution,
-                            xlim=[-20,50],
-                            ylim=[-30,30],
-                            prior=0.5)
+    # omap = OccupancyGrid(resolution=resolution,
+    #                         xlim=[-13,20],
+    #                         ylim=[-25,7],
+    #                         prior=0.5)
+    omap = OccupancyGrid(resolution=.2,
+                        xlim=[0,100],
+                        ylim=[0,100],
+                        prior=0.5)
+    # omap = OccupancyGrid(resolution=1,
+    #                     xlim=[0,500],
+    #                     ylim=[0,500],
+    #                     prior=0.)
 
-    reader = csv.reader(open("../data/real_world_map.csv"), delimiter=",")
+    # reader = csv.reader(open("../data/ogm_ground_truth.csv"), delimiter=",")
+    reader = csv.reader(open("../data/og.csv"), delimiter=",")
+
     x = list(reader)
     omap.grid = np.array(x).astype("float")
 
@@ -351,11 +376,18 @@ def main(datafile, plot_live, resolution):
 
     pickle.dump(omap, open('real_world_map.p', 'wb'))
     
+    # Print the map
+    fig, ax = plt.subplots()
+    omap.plot_grid(ax)
+    plt.show()
+    
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Occupancy Grid Map")
     parser.add_argument("-p", "--plot_live", action="store_true", help="Whether we should plot as we go")
     parser.add_argument("-d", "--datafile", type=str, default="data/rooms-dataset.npz", help="Location of data. Defaults to data/rooms-dataset.npz")
-    parser.add_argument("-r", "--resolution", type=float, default=0.5, help="Grid resolution. Default should work well.")
+    parser.add_argument("-r", "--resolution", type=float, default=.2, help="Grid resolution. Default should work well.")
     args = vars(parser.parse_args())
 
     main(**args)
+  
+    

@@ -148,22 +148,31 @@ class Particle:
         plt.scatter(self.xTrajectory[-1], self.yTrajectory[-1], color=next(colors), s=500)
         plt.plot(self.xTrajectory, self.yTrajectory)
         self.og.plotOccupancyGrid([-13, 20], [-25, 7], plotThreshold=False)
+        
+def readJson(jsonFile):
+    with open(jsonFile, 'r') as f:
+        input = json.load(f)
+        return input['map']
+    
+def calculateAngles(numSamplesPerRev, lidarFOV):
+    return np.linspace(-lidarFOV / 2, lidarFOV / 2, numSamplesPerRev).tolist()
 
-def processSensorData(pf, sensorData, plotTrajectory = True):
-    # gtData = readJson("../DataSet/PreprocessedData/intel_corrected_log") #########   For Debug Only  #############
+def processSensorData(pf, sensorData, plotTrajectory=True):
+    X_t, U_t, Z_tp1 = [], [], []
+    
     count = 0
-    # plt.figure(figsize=(19.20, 19.20))
 
     plt.ion()  # Turn on interactive mode
 
     plt.figure(figsize=(19.20, 19.20))
-    for key in sorted(sensorData.keys()):
+    limit = 100
+    for key in sorted(sensorData.keys())[:limit]:
+    # for key in sorted(sensorData.keys()):
+
         count += 1
-        #print(count)
         pf.updateParticles(sensorData[key], count)
         if pf.weightUnbalanced():
             pf.resample()
-            #print("resample")
 
         plt.clf()  # Clear the current figure
         maxWeight = -1
@@ -182,25 +191,48 @@ def processSensorData(pf, sensorData, plotTrajectory = True):
         plt.draw()  # Update the plot
         plt.pause(0.01)  # Pause to allow the plot to update
 
-        # plt.savefig('../Output/' + str(count).zfill(3) + '.png')
+        # Save data
+        X_t.append((bestParticle.prevMatchedReading['x'], bestParticle.prevMatchedReading['y'], bestParticle.prevMatchedReading['theta']))
+        
+        # Calculate control input U_t
+        if count > 1:
+            prev_x, prev_y, prev_theta = X_t[-2]
+            curr_x, curr_y, curr_theta = X_t[-1]
+            control_input = (curr_x - prev_x, curr_y - prev_y, curr_theta - prev_theta)
+            U_t.append(control_input)
+        else:
+            U_t.append((0, 0, 0))  # No movement for the first control input
+
+        # Save observation Z_tp1
+        Z_tp1.append(sensorData[key]['range'])
+
+        # Save angles
+        if count == 1:
+            numSamplesPerRev = len(sensorData[key]['range'])
+            lidarFOV = np.pi  # Assuming lidarFOV is pi, adjust if necessary
+            angles = calculateAngles(numSamplesPerRev, lidarFOV)
 
     plt.ioff()  # Turn off interactive mode
     plt.close()
     maxWeight = 0
     for particle in pf.particles:
-        particle.plotParticle()
+        # particle.plotParticle()
         if maxWeight < particle.weight:
             maxWeight = particle.weight
             bestParticle = particle
-    bestParticle.plotParticle()
-    
+    # bestParticle.plotParticle()
+
     np.save('map.npy', ogMap)
+        
+    data = {}
+    data['X_t'] = np.asarray(X_t)
+    data['U_t'] = np.asarray(U_t)
+    data['Z_tp1'] = np.asarray(Z_tp1)
+    data['angles'] = np.asarray(angles)
 
-
-def readJson(jsonFile):
-    with open(jsonFile, 'r') as f:
-        input = json.load(f)
-        return input['map']
+    
+    # save data as realWorld-dataset.npz
+    np.savez('realWorld-dataset.npz', **data)
 
 def main():
     initMapXLength, initMapYLength, unitGridSize, lidarFOV, lidarMaxRange = 50, 50, 0.02, np.pi, 10  # in Meters

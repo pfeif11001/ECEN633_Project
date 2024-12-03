@@ -224,7 +224,7 @@ def getMovingTheta(matchedReading, xTrajectory, yTrajectory):
     return movingTheta
 
 def processSensorData(sensorData, og, sm):
-    # gtData = readJson("../DataSet/PreprocessedData/intel_corrected_log") #########   For Debug Only  #############
+    gtData = readJson("../DataSet/PreprocessedData/intel_corrected_log") #########   For Debug Only  #############
     count = 0
     plt.figure(figsize=(19.20, 19.20))
     colors = iter(cm.rainbow(np.linspace(1, 0, len(sensorData) + 1)))
@@ -233,10 +233,10 @@ def processSensorData(sensorData, og, sm):
         count += 1
         print(count)
         if count == 1:
-            #og.updateOccupancyGrid(sensorData[key])
+            og.updateOccupancyGrid(sensorData[key])
             prevRawMovingTheta, prevMatchedMovingTheta = None, None
             matchedReading, confidence = sensorData[key], 1
-            #prevGtReading = gtData[key]  #########   For Debug Only  #############
+            prevGtReading = gtData[key]  #########   For Debug Only  #############
         else:
             currentRawReading = sensorData[key]
             estimatedReading, estMovingDist, estMovingTheta, rawMovingTheta = updateEstimatedPose(currentRawReading,
@@ -244,15 +244,15 @@ def processSensorData(sensorData, og, sm):
             matchedReading, confidence = sm.matchScan(estimatedReading, estMovingDist, estMovingTheta, count)
             prevRawMovingTheta = rawMovingTheta
             prevMatchedMovingTheta = getMovingTheta(matchedReading, xTrajectory, yTrajectory)
-        #########   For Debug Only  #############
-        #gtReading = gtData[key]
-        #compareGT(currentRawReading, prevRawReading, matchedReading, prevMatchedReading, gtReading, prevGtReading)
-        #prevGtReading = gtReading
+            #########   For Debug Only  #############
+            gtReading = gtData[key]
+            compareGT(currentRawReading, prevRawReading, matchedReading, prevMatchedReading, gtReading, prevGtReading)
+            prevGtReading = gtReading
         #########################################
         og.updateOccupancyGrid(matchedReading)
         updateTrajectory(matchedReading, xTrajectory, yTrajectory)
         prevMatchedReading, prevRawReading = matchedReading, sensorData[key]
-        #if count == 100:
+        # if count == 100:
         #   break
 
     for i in range(len(xTrajectory)):

@@ -93,7 +93,8 @@ class ParticleFilterLocalizer():
         self.particles = np.random.uniform([xlim[0], ylim[0], 0],
                                         [xlim[1], ylim[1], 360], (N,3))
         # We sample one particle exactly to jumpstart the algorithm
-        self.particles[0] = np.array([1.5, 1.5, 0])
+        # self.particles[0] = np.array([1.5, 1.5, 0])
+        # self.particles[0] = np.array([50.255856, 33.34968063, 35.45938391])
 
         # Set up noise for motion/measurement models
         # You may do whatever calculations you want, but 
@@ -101,39 +102,40 @@ class ParticleFilterLocalizer():
         self.cov = cov
         self.alphas = alphas
         self.z_max = 20
-
-
-    def propagate_motion(self, u: 'np.ndarray[(3,) , np.dtype[np.float64]]'):
+    
+    
+    def propagate_motion(self, u: 'np.ndarray[(3,), np.dtype[np.float64]]'):
         """Propagate motion noisily through all particles in place.
 
         Make sure you use self.cov somewhere for the noise added.
 
         Parameters:
         u: A 3-array representing movement from the previous step 
-            as a delta x, delta y, delta theta (in degrees).
+        as a delta x, delta y, delta theta (in degrees).
         """
-        ####################################
-        # Finish this implemenation!!
-        
         dx, dy, dtheta = u
-        dtheta_rad = math.radians(dtheta)
+        dtheta_rad = math.radians(dtheta)  # Convert dtheta to radians.
 
         for i in range(self.N):
+            # Add noise to the deltas.
             dx_noisy = dx + np.random.normal(0, self.cov[0])
             dy_noisy = dy + np.random.normal(0, self.cov[1])
             dtheta_noisy = dtheta_rad + np.random.normal(0, self.cov[2])
-            
-            H_u = convert_xyt_to_H(dx_noisy, dy_noisy, math.degrees(dtheta_noisy))
-            x, y, theta = self.particles[i]
-            H_p = convert_xyt_to_H(x, y, theta)
-            H_new = H_p @ H_u
-                        
-            self.particles[i, 0] = H_new[0, 2]
-            self.particles[i, 1] = H_new[1, 2]
-            self.particles[i, 2] = math.degrees(math.atan2(H_new[1, 0], H_new[0, 0])) % 360
-        
 
-        ####################################
+            # Get the current state of the particle.
+            x, y, theta = self.particles[i]
+            theta_rad = math.radians(theta)
+
+            # Compute the updated position directly.
+            new_x = x + dx_noisy #* math.cos(theta_rad) - dy_noisy * math.sin(theta_rad)
+            new_y = y + dy_noisy #* math.sin(theta_rad) + dy_noisy * math.cos(theta_rad)
+            new_theta = (theta_rad + dtheta_noisy) % (2 * math.pi)
+
+            # Update the particle with the new state.
+            self.particles[i, 0] = new_x
+            self.particles[i, 1] = new_y
+            self.particles[i, 2] = math.degrees(new_theta)  # Store theta in degrees as in the original.
+
 
     @staticmethod
     @njit
@@ -173,7 +175,7 @@ class ParticleFilterLocalizer():
         Numpy array of expected distances
         """
         ####################################
-        # Finish this implemenation!!
+        # Finish this implemenation!
         
         expected = np.zeros(angles.shape)
         
@@ -341,19 +343,17 @@ class ParticleFilterLocalizer():
         ####################################
 
 
-def main(plot_live: bool, mapfile: str, datafile: str, num: int, makeGif: bool):
-
-    # Import for making Gif
-    gifFrames = []
-    if makeGif:
-        from PIL import Image
-
+def main(plot_live: bool, mapfile: str, datafile: str, num: int):
+    
+    np.random.seed(0)
+        
     #################################################
     # Tweak these like you want
     alphas = np.array([0.8, 0.0, 0.05, 0.15]) # A 4-array of values make up the laser sensor model. In the order of [p_hit, p_unexp, p_random, p_max]. Should sum to 1.
     # cov = np.array([.04, .04, .01])
     cov = np.array([0.1, 0.1, 0.05])      # This one works really well!
-
+    # cov = np.array([0, 0, 0])      # This one works really well!
+    
     #################################################
 
     # Load prior map
@@ -361,13 +361,21 @@ def main(plot_live: bool, mapfile: str, datafile: str, num: int, makeGif: bool):
 
     # Load data stream
     data = np.load(datafile)
-    X_t = data['X_t']
-    U_t = data['U_t']
-    Z_tp1 = data['Z_tp1']
-    angles = data['angles']
     
+    X_t = data['X_t']
+    # Convert theta in X_t from radians to degrees
+    X_t[:,2] = np.degrees(X_t[:,2])
+    
+    U_t = data['U_t']
+    # Convert theta in U_t from radians to degrees
+    U_t[:,2] = np.degrees(U_t[:,2])
+    
+    Z_tp1 = data['Z_tp1']
+    
+    angles = data['angles']
+        
     # Initialize particle filter
-    pf = ParticleFilterLocalizer(prior_map, [-20, 40], [-20, 20], num, alphas, cov)    
+    pf = ParticleFilterLocalizer(prior_map, [0, 100], [0, 100], num, alphas, cov)    
 
     # Setup plotting
     if plot_live:
@@ -377,10 +385,7 @@ def main(plot_live: bool, mapfile: str, datafile: str, num: int, makeGif: bool):
         prior_map.plot_grid(ax)
         true_loc = ax.scatter(X_t[0][0], X_t[0][1], 2, 'b')
         particles = ax.scatter(pf.particles[:,0], pf.particles[:,1], 0.5, 'r')   
-        
-    # Lists to store errors
-    position_errors = []
-    rotation_errors = []       
+             
 
     # Loop through data stream
     for t in tqdm(range(len(X_t)-1)):
@@ -388,49 +393,40 @@ def main(plot_live: bool, mapfile: str, datafile: str, num: int, makeGif: bool):
         # Extract data
         u_t = U_t[t]
         z_tp1 = Z_tp1[t]
-
+        
         #######################################################
         # Operate on Data to run the particle filter algorithm
         pf.iterate(u_t, z_tp1, angles)
         
+        # Print the particle
+        print("X_t", X_t[t])
+        print("Particle", pf.particles[0])
+        print("u_t", u_t)
+        diff = X_t[t] - pf.particles[0]
+        formatted_diff = np.array2string(diff, formatter={'float_kind':lambda x: "%.6f" % x})
+        print("X_t - Particle", formatted_diff)
+        
         #######################################################
 
         # Plot
-        if plot_live and t % 5 == 0:
+        # if plot_live and t % 5 == 0:
+        if plot_live:
+
             true_loc.set_offsets(X_t[t+1:t+2,:2])
             particles.set_offsets(pf.particles[:,:2])
 
             fig.canvas.draw()
-
-            if (makeGif):
-                imgData = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
-                w, h = fig.canvas.get_width_height()
-                mod = np.sqrt(imgData.shape[0]/(3*w*h)) # multi-sampling of pixels on high-res displays does weird things
-                im = imgData.reshape((int(h*mod), int(w*mod), -1))
-                gifFrames.append(Image.fromarray(im))
-
             fig.canvas.flush_events()
-
-    if (plot_live and makeGif):
-        gifFrames[0].save(
-            'gifOutput.gif', 
-            format='GIF',
-            append_images=gifFrames[1:],
-            save_all=True,
-            duration=len(gifFrames)*2*0.1,
-            loop=0)
-        
+    
     if plot_live:
         plt.ioff()
         plt.show()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Occupancy Grid Map")
-    parser.add_argument("-g", "--makeGif", action="store_true", help="Whether to save a gif of all the frames")
     parser.add_argument("-p", "--plot_live", action="store_true", help="Whether we should plot as we go")
     parser.add_argument("-d", "--datafile", type=str, default="data/localization-dataset.npz", help="Location of localization data. Defaults to data/localization-data.npz")
-    parser.add_argument("-m", "--mapfile", type=str, default="data/
-                        ", help="Location of map data. Defaults to data/map.p")
+    parser.add_argument("-m", "--mapfile", type=str, default="data/map.p", help="Location of map data. Defaults to data/map.p")
     parser.add_argument("-n", "--num", type=int, default=100, help="Number of particles to use")
     args = vars(parser.parse_args())
 

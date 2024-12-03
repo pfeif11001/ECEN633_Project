@@ -2,7 +2,7 @@ import json
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
-from Utils.OccupancyGrid import OccupancyGrid
+from OccupancyGrid import OccupancyGrid
 from scipy.ndimage import gaussian_filter
 import math
 
