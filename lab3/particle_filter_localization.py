@@ -127,8 +127,8 @@ class ParticleFilterLocalizer():
             theta_rad = math.radians(theta)
 
             # Compute the updated position directly.
-            new_x = x + dx_noisy #* math.cos(theta_rad) - dy_noisy * math.sin(theta_rad)
-            new_y = y + dy_noisy #* math.sin(theta_rad) + dy_noisy * math.cos(theta_rad)
+            new_x = x + dx_noisy
+            new_y = y + dy_noisy
             new_theta = (theta_rad + dtheta_noisy) % (2 * math.pi)
 
             # Update the particle with the new state.
@@ -351,9 +351,7 @@ def main(plot_live: bool, mapfile: str, datafile: str, num: int):
     # Tweak these like you want
     alphas = np.array([0.8, 0.0, 0.05, 0.15]) # A 4-array of values make up the laser sensor model. In the order of [p_hit, p_unexp, p_random, p_max]. Should sum to 1.
     # cov = np.array([.04, .04, .01])
-    cov = np.array([0.1, 0.1, 0.05])      # This one works really well!
-    # cov = np.array([0, 0, 0])      # This one works really well!
-    
+    cov = np.array([0.1, 0.1, 0.05])      # This one works really well!    
     #################################################
 
     # Load prior map
@@ -397,14 +395,6 @@ def main(plot_live: bool, mapfile: str, datafile: str, num: int):
         #######################################################
         # Operate on Data to run the particle filter algorithm
         pf.iterate(u_t, z_tp1, angles)
-        
-        # Print the particle
-        print("X_t", X_t[t])
-        print("Particle", pf.particles[0])
-        print("u_t", u_t)
-        diff = X_t[t] - pf.particles[0]
-        formatted_diff = np.array2string(diff, formatter={'float_kind':lambda x: "%.6f" % x})
-        print("X_t - Particle", formatted_diff)
         
         #######################################################
 

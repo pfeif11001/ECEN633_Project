@@ -366,7 +366,7 @@ def main(datafile, plot_live, resolution):
     #                     prior=0.)
 
     # reader = csv.reader(open("../data/ogm_ground_truth.csv"), delimiter=",")
-    reader = csv.reader(open("../data/og.csv"), delimiter=",")
+    reader = csv.reader(open("../data/og_2.csv"), delimiter=",")
 
     x = list(reader)
     omap.grid = np.array(x).astype("float")
@@ -374,7 +374,7 @@ def main(datafile, plot_live, resolution):
     omap.grid[omap.grid == 1] = 100
     omap.grid[omap.grid == 0] = -100
 
-    pickle.dump(omap, open('real_world_map.p', 'wb'))
+    pickle.dump(omap, open('real_world_map_2.p', 'wb'))
     
     # Print the map
     fig, ax = plt.subplots()
