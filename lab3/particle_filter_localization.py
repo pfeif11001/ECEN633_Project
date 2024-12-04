@@ -94,7 +94,7 @@ class ParticleFilterLocalizer():
                                         [xlim[1], ylim[1], 360], (N,3))
         # We sample one particle exactly to jumpstart the algorithm
         # self.particles[0] = np.array([1.5, 1.5, 0])
-        # self.particles[0] = np.array([50.255856, 33.34968063, 35.45938391])
+        self.particles[0] = np.array([50.255856, 33.34968063, 35.45938391])
 
         # Set up noise for motion/measurement models
         # You may do whatever calculations you want, but 
@@ -343,8 +343,13 @@ class ParticleFilterLocalizer():
         ####################################
 
 
-def main(plot_live: bool, mapfile: str, datafile: str, num: int):
+def main(plot_live: bool, mapfile: str, datafile: str, num: int, makeGif: bool):
     
+    # Import for making Gif
+    gifFrames = []
+    if makeGif:
+        from PIL import Image
+
     np.random.seed(0)
         
     #################################################
@@ -406,14 +411,33 @@ def main(plot_live: bool, mapfile: str, datafile: str, num: int):
             particles.set_offsets(pf.particles[:,:2])
 
             fig.canvas.draw()
-            fig.canvas.flush_events()
     
+            if (makeGif):
+                imgData = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
+                w, h = fig.canvas.get_width_height()
+                mod = np.sqrt(imgData.shape[0]/(3*w*h)) # multi-sampling of pixels on high-res displays does weird things
+                im = imgData.reshape((int(h*mod), int(w*mod), -1))
+                gifFrames.append(Image.fromarray(im))
+
+            fig.canvas.flush_events()
+            
+    if (plot_live and makeGif):
+        gifFrames[0].save(
+            'gifOutput.gif', 
+            format='GIF',
+            append_images=gifFrames[1:],
+            save_all=True,
+            duration=len(gifFrames)*2*0.1,
+            loop=0)
+        
+
     if plot_live:
         plt.ioff()
         plt.show()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Occupancy Grid Map")
+    parser.add_argument("-g", "--makeGif", action="store_true", help="Whether to save a gif of all the frames")
     parser.add_argument("-p", "--plot_live", action="store_true", help="Whether we should plot as we go")
     parser.add_argument("-d", "--datafile", type=str, default="data/localization-dataset.npz", help="Location of localization data. Defaults to data/localization-data.npz")
     parser.add_argument("-m", "--mapfile", type=str, default="data/map.p", help="Location of map data. Defaults to data/map.p")
