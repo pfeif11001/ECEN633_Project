@@ -88,7 +88,7 @@ class ParticleFilterLocalizer():
         self.priormap = priormap
         self.N = N
         self.weights = np.ones(N) / N
-        self.W_SLOW = 15 #Use when not seeding
+        self.W_SLOW = 25 #Use when not seeding
         self.W_FAST = 0.0
         self.W_SLOW_HIST = []
         self.W_FAST_HIST = []
@@ -408,7 +408,7 @@ def main(plot_live: bool, mapfile: str, datafile: str, num: int, makeGif: bool):
 
     # Loop through data stream
     for t in tqdm(range(len(X_t)-1)):
-        if t > 50 and t <= 65:
+        if t > 90 and t <= 105:
             continue
     # for t in tqdm(range(20)):
         # Extract data
@@ -420,12 +420,12 @@ def main(plot_live: bool, mapfile: str, datafile: str, num: int, makeGif: bool):
         pf.iterate(u_t, z_tp1, angles)
         
         # Print the particle
-        print("X_t", X_t[t])
-        print("Particle", pf.particles[0])
-        print("u_t", u_t)
+        # print("X_t", X_t[t])
+        # print("Particle", pf.particles[0])
+        # print("u_t", u_t)
         diff = X_t[t] - pf.particles[0]
         formatted_diff = np.array2string(diff, formatter={'float_kind':lambda x: "%.6f" % x})
-        print("X_t - Particle", formatted_diff)
+        # print("X_t - Particle", formatted_diff)
         
         #######################################################
 
