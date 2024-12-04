@@ -1,6 +1,6 @@
 dataset: 
   dir: 'data/input/'
-  map1: 'orebro.gfs.log'
+  map1: 'intel.gfs.log'
   map2: 'fr079-complete.gfs.log'
 laser:
   max_range: 5
