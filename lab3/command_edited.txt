@@ -1,0 +1,1 @@
+python3 particle_filter_localization_edited.py --mapfile ../data/real_world_map.p --datafile ../data/data.npz -p -n 10000 -g
